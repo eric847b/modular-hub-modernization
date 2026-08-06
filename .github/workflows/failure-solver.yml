@@ -1,0 +1,25 @@
+name: Proactive Failure Solver
+on:
+  schedule:
+    - cron: '50 */8 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: read
+jobs:
+  solve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests
+      - name: Run FailureSolver
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_FULL_PAT: ${{ secrets.GH_FULL_PAT }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python .github/run_failure_solver.py || true
