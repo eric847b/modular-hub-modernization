@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v1.0.0)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package
+        run: |
+          TAG=${{ github.event.inputs.tag || github.ref_name }}
+          NAME="modular-hub-modernization-${TAG}"
+          mkdir -p dist/"$NAME"
+          cp -r *.js LICENSE README.md dist/"$NAME"/ 2>/dev/null || true
+          cp -r .github dist/"$NAME"/ 2>/dev/null || true
+          cd dist && zip -r "${NAME}.zip" "$NAME" && tar -czf "${NAME}.tar.gz" "$NAME"
+          ls -la
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: Modular Hub Modernization ${{ github.event.inputs.tag || github.ref_name }}
+          body: |
+            ## Modular Hub Modernization ${{ github.event.inputs.tag || github.ref_name }}
+
+            Modernized module system with contract shims, foundational modules, and zero-warning validator.
+
+            ### Assets
+            Portable source zip / tar.gz of the module files.
+          files: |
+            dist/*.zip
+            dist/*.tar.gz
+          draft: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
